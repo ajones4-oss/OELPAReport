@@ -30,6 +30,20 @@
             body { background: white; padding: 0; }
             .shadow-sm { box-shadow: none !important; border: none !important; }
             .print-border { border: 1px solid #e2e8f0 !important; }
+            /* Force domain blocks to stay together */
+            .domain-block {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin-bottom: 2rem;
+                display: block;
+            }
+            /* Ensure the main container doesn't have artificial margins that cause extra pages */
+            .main-content-container {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
         }
         @font-face {
             font-family: 'Inter';
@@ -45,7 +59,7 @@
         const { useState, useEffect, useMemo } = React;
 
         const rubrics = {
-           Reading: [
+            Reading: [
                 { level: 1, title: "Foundations", read: "Common words and short, simple sentences.", understanding: "Find the main point; answer 'Who, What, and Where' questions.", research: "Label information seen in a picture or short text." },
                 { level: 2, title: "Expanding Vocabulary", read: "Recognize important vocabulary and common expressions.", understanding: "Find the main idea; retell details in your own words.", research: "Take information from a source and write a short summary." },
                 { level: 3, title: "Academic Focus", read: "'School words' used in Science, History, and Literature.", understanding: "Explain main concepts; find text evidence to prove a point.", research: "Look at several different sources to find information." },
@@ -255,7 +269,7 @@
                     </div>
 
                     {/* Actual Progress Sheet */}
-                    <div className="max-w-5xl mx-auto bg-white p-8 md:p-12 border shadow-sm print:shadow-none print:border-none rounded-sm">
+                    <div className="max-w-5xl mx-auto bg-white p-8 md:p-12 border shadow-sm print:shadow-none print:border-none rounded-sm main-content-container">
                         <header className="flex justify-between items-start border-b-8 border-slate-900 pb-6 mb-10">
                             <div>
                                 <h2 className="text-5xl font-black tracking-tighter uppercase italic leading-none">{studentName}</h2>
@@ -275,7 +289,7 @@
                         </header>
 
                         {/* Top Summary Section with Radar Chart */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 items-center border-b border-slate-100 pb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 items-center border-b border-slate-100 pb-12 break-inside-avoid">
                             <div className="md:col-span-4">
                                 <RadarChart scores={scores} />
                             </div>
@@ -307,7 +321,7 @@
                         </div>
 
                         <div className="space-y-12">
-                            {Object.entries(rubrics).map(([category, levels]) => {
+                            {Object.entries(rubrics).map(([category, levels], idx) => {
                                 const s25 = scores[category]['2025'];
                                 const s26 = scores[category]['2026'];
                                 const hasGrown = s26 > s25;
@@ -315,7 +329,7 @@
                                 const nextLevel = s26 < 5 ? levels[s26] : null;
                                 
                                 return (
-                                    <div key={category} className="group">
+                                    <div key={category} className="domain-block group">
                                         <div className="flex items-center gap-3 mb-6">
                                             <div className="w-10 h-10 rounded bg-slate-900 text-white flex items-center justify-center font-black text-lg italic">
                                                 {category[0]}
