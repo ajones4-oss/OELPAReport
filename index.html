@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>OELPA</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Progress Pathway</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX transformation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.4/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .shadow-sm { box-shadow: none !important; border: none !important; }
+            .print-border { border: 1px solid #e2e8f0 !important; }
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-neutral-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const rubrics = {
+           Reading: [
+                { level: 1, title: "Foundations", read: "Common words and short, simple sentences.", understanding: "Find the main point; answer 'Who, What, and Where' questions.", research: "Label information seen in a picture or short text." },
+                { level: 2, title: "Expanding Vocabulary", read: "Recognize important vocabulary and common expressions.", understanding: "Find the main idea; retell details in your own words.", research: "Take information from a source and write a short summary." },
+                { level: 3, title: "Academic Focus", read: "'School words' used in Science, History, and Literature.", understanding: "Explain main concepts; find text evidence to prove a point.", research: "Look at several different sources to find information." },
+                { level: 4, title: "Strategic Reading", read: "Idioms and figurative language (non-literal meanings).", understanding: "Summarize long texts; judge if arguments make sense.", research: "Conduct own research and decide if sources are useful." },
+                { level: 5, title: "Mastery", read: "Difficult metaphors, jokes, and cultural expressions in writing.", understanding: "Summarize, analyze, and critique an author's argument.", research: "Synthesize information from many places; check for bias/trustworthiness." }
+            ],
+            Writing: [
+                { level: 1, title: "Basic Messages", text: "You can write basic notes and short messages.", details: ["Vocabulary: Small set of words.", "Sentences: Simple (e.g., 'The cat is big.')", "Interaction: Write short replies to questions."] },
+                { level: 2, title: "Organizing Thoughts", text: "You are starting to organize thoughts into a clear order.", details: ["Structure: Use linking words (and, but, because).", "Stories: Write a list of events in order.", "Arguments: Write a claim with one reason."] },
+                { level: 3, title: "Written Discussion", text: "You can participate in written discussions.", details: ["Sentences: Many different types to keep it interesting.", "Discussion: Respond to others and add new thoughts.", "Information: Explain a topic with variety of facts and details."] },
+                { level: 4, title: "Detailed Research", text: "You can write long, organized pieces with strong details.", details: ["Narrative: Full story using complex sentences.", "Paragraphs: Group ideas into organized paragraphs.", "Research: Develop a topic using found evidence."] },
+                { level: 5, title: "Persuasive flow", text: "You can write papers that look at both sides of an issue.", details: ["Flow: Use complex transitions (furthermore, in contrast).", "Arguments: Explain counter-claims and rebuttals.", "Persuasion: Use logic/evidence to change a reader's mind."] }
+            ],
+            Speaking: [
+                { level: 1, title: "Simple Interaction", details: ["Sentences: Simple sentences, small number of words.", "Conversations: Basic 'yes/no' or 'who/what' answers.", "Opinions: Say if you like/dislike familiar things."] },
+                { level: 2, title: "Making Claims", details: ["Sentences: Use 'and', 'but', 'so' for compound sentences.", "Presenting: Introduce a topic, give two facts, and use a closing sentence.", "Arguments: Make a claim and give a reason or evidence."] },
+                { level: 3, title: "Standard Fluency", details: ["Sentences: Standard English; stories with clear sequence.", "Conversations: Listen and add your own ideas to theirs.", "Structure: Develop a topic with facts and details and strong conclusion."] },
+                { level: 4, title: "Complex Analysis", details: ["Sentences: Use linking words (however, therefore).", "Critique: Listen to an argument and explain why it is strong or weak.", "Research: Speak confidently about a completed project."] },
+                { level: 5, title: "Professional Speech", details: ["Sentences: Speak fluently and organize thoughts so they are easy to follow.", "Persuasion: Ask probing questions to test logic.", "Synthesis: Combine info from many places into one clear, professional speech."] }
+            ],
+            Listening: [
+                { level: 1, title: "Learning Basics", text: "Learning the basics.", details: ["What you do: Understand common words/formula phrases like 'My name is'", "Listening: Follow short talks about familiar things.", "Responding: Answer basic Yes/No, Who/What/Where."] },
+                { level: 2, title: "Connecting Ideas", text: "Starting to connect ideas.", details: ["What you do: Recognize common phrases in presentations.", "Listening: Find main topic and one important detail.", "Interacting: Short conversations; share opinions."] },
+                { level: 3, title: "Academic English", text: "Learning school words.", details: ["What you do: Understand words in Science, Math, History.", "Listening: Find 'Big Idea' and supporting details.", "Interacting: Add own facts/info to conversations."] },
+                { level: 4, title: "Hidden Meanings", text: "Understanding hidden meanings.", details: ["What you do: Understand idioms and figurative language.", "Listening: Guess speaker intent and organization.", "Analyzing: Detect rhetoric vs. factual evidence."] },
+                { level: 5, title: "Critical Thinking", text: "Thinking critically in English.", details: ["What you do: Understand complex jokes and deep meanings.", "Listening: Summarize difficult presentations in full.", "Analyzing: Critique logic and find flaws in reasoning."] }
+            ]
+        };
+
+        const RadarChart = ({ scores }) => {
+            const size = 300;
+            const center = size / 2;
+            const radius = size * 0.35;
+            const domains = ['Reading', 'Writing', 'Speaking', 'Listening'];
+            
+            const getCoordinates = (index, value) => {
+                const angle = (Math.PI * 2 * index) / domains.length - Math.PI / 2;
+                const r = (value / 5) * radius;
+                return {
+                    x: center + r * Math.cos(angle),
+                    y: center + r * Math.sin(angle)
+                };
+            };
+
+            const points25 = domains.map((d, i) => {
+                const p = getCoordinates(i, scores[d]['2025']);
+                return `${p.x},${p.y}`;
+            }).join(' ');
+
+            const points26 = domains.map((d, i) => {
+                const p = getCoordinates(i, scores[d]['2026']);
+                return `${p.x},${p.y}`;
+            }).join(' ');
+
+            return (
+                <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+                        {/* Grid Rings */}
+                        {[1, 2, 3, 4, 5].map(v => (
+                            <polygon 
+                                key={v}
+                                points={domains.map((_, i) => {
+                                    const p = getCoordinates(i, v);
+                                    return `${p.x},${p.y}`;
+                                }).join(' ')}
+                                fill="none"
+                                stroke="#cbd5e1"
+                                strokeWidth="1"
+                                strokeDasharray="2,2"
+                            />
+                        ))}
+                        
+                        {/* Axis Lines */}
+                        {domains.map((d, i) => {
+                            const p = getCoordinates(i, 5);
+                            return (
+                                <line 
+                                    key={d} 
+                                    x1={center} y1={center} x2={p.x} y2={p.y} 
+                                    stroke="#94a3b8" 
+                                    strokeWidth="1" 
+                                />
+                            );
+                        })}
+
+                        {/* Labels */}
+                        {domains.map((d, i) => {
+                            const p = getCoordinates(i, 5.8);
+                            return (
+                                <text 
+                                    key={d} 
+                                    x={p.x} y={p.y} 
+                                    textAnchor="middle" 
+                                    className="text-[10px] font-black uppercase fill-slate-500"
+                                >
+                                    {d}
+                                </text>
+                            );
+                        })}
+
+                        {/* Year 2025 Shape (Dashed) */}
+                        <polygon 
+                            points={points25}
+                            fill="rgba(148, 163, 184, 0.1)"
+                            stroke="#64748b"
+                            strokeWidth="2"
+                            strokeDasharray="4,2"
+                        />
+
+                        {/* Year 2026 Shape (Solid) */}
+                        <polygon 
+                            points={points26}
+                            fill="rgba(79, 70, 229, 0.15)"
+                            stroke="#4f46e5"
+                            strokeWidth="3"
+                        />
+
+                        {/* Legend in Chart */}
+                        <g transform={`translate(${size - 60}, 10)`}>
+                            <line x1="0" y1="0" x2="15" y2="0" stroke="#64748b" strokeWidth="2" strokeDasharray="3,1" />
+                            <text x="20" y="4" className="text-[8px] font-bold fill-slate-400 uppercase">2025</text>
+                            <line x1="0" y1="12" x2="15" y2="12" stroke="#4f46e5" strokeWidth="2" />
+                            <text x="20" y="16" className="text-[8px] font-bold fill-indigo-600 uppercase">2026</text>
+                        </g>
+                    </svg>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">Proficiency Comparison</p>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [studentName, setStudentName] = useState("Jane Doe");
+            const [scores, setScores] = useState({
+                Reading: { '2025': 2, '2026': 3 },
+                Writing: { '2025': 1, '2026': 2 },
+                Speaking: { '2025': 2, '2026': 4 },
+                Listening: { '2025': 3, '2026': 4 }
+            });
+
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [studentName, scores]);
+
+            const updateScore = (cat, year, val) => {
+                setScores(prev => ({
+                    ...prev,
+                    [cat]: { ...prev[cat], [year]: parseInt(val) }
+                }));
+            };
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 font-sans text-slate-900">
+                    {/* Configuration Header (No Print) */}
+                    <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border mb-8 no-print overflow-hidden">
+                        <div className="bg-slate-900 p-4 text-white flex justify-between items-center">
+                            <h1 className="font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <i data-lucide="star" className="text-yellow-400 fill-yellow-400 w-4 h-4"></i> 
+                                Student Profile & Growth Config
+                            </h1>
+                            <button 
+                                onClick={() => window.print()}
+                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-indigo-500/20"
+                            >
+                                <i data-lucide="printer" className="w-4 h-4"></i> Generate PDF Report
+                            </button>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-6 bg-slate-50">
+                            <div className="md:col-span-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Student Name</label>
+                                <input 
+                                    type="text" 
+                                    value={studentName} 
+                                    onChange={(e) => setStudentName(e.target.value)}
+                                    className="w-full border-2 border-slate-200 rounded-lg p-2 font-bold text-sm focus:border-indigo-500 outline-none transition-colors"
+                                />
+                            </div>
+                            {Object.keys(scores).map(cat => (
+                                <div key={cat} className="space-y-1">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">{cat}</label>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <span className="text-[8px] font-bold text-slate-400 block">START</span>
+                                            <select 
+                                                value={scores[cat]['2025']} 
+                                                onChange={(e) => updateScore(cat, '2025', e.target.value)}
+                                                className="w-full border rounded p-1 text-xs font-bold"
+                                            >
+                                                {[1,2,3,4,5].map(v => <option key={v} value={v}>Lvl {v}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="text-[8px] font-bold text-indigo-400 block">CURRENT</span>
+                                            <select 
+                                                value={scores[cat]['2026']} 
+                                                onChange={(e) => updateScore(cat, '2026', e.target.value)}
+                                                className="w-full border-2 border-indigo-200 rounded p-1 text-xs font-black text-indigo-700"
+                                            >
+                                                {[1,2,3,4,5].map(v => <option key={v} value={v}>Lvl {v}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Actual Progress Sheet */}
+                    <div className="max-w-5xl mx-auto bg-white p-8 md:p-12 border shadow-sm print:shadow-none print:border-none rounded-sm">
+                        <header className="flex justify-between items-start border-b-8 border-slate-900 pb-6 mb-10">
+                            <div>
+                                <h2 className="text-5xl font-black tracking-tighter uppercase italic leading-none">{studentName}</h2>
+                                <div className="flex items-center gap-4 mt-3">
+                                    <p className="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">OELPA Growth Pathway • 2025-2026</p>
+                                    <div className="h-1 w-12 bg-indigo-500"></div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="bg-slate-900 text-white px-4 py-2 text-xs font-black uppercase tracking-tighter">
+                                    Growth Pathway
+                                </div>
+                                <div className="mt-2 text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+                                    Generated: {new Date().toLocaleDateString()}
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Top Summary Section with Radar Chart */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 items-center border-b border-slate-100 pb-12">
+                            <div className="md:col-span-4">
+                                <RadarChart scores={scores} />
+                            </div>
+                            <div className="md:col-span-8">
+                                <h3 className="text-2xl font-black uppercase italic mb-4 flex items-center gap-2">
+                                    <i data-lucide="trending-up" className="text-indigo-600"></i>
+                                    Growth Overview
+                                </h3>
+                                <p className="text-slate-600 leading-relaxed text-sm mb-6">
+                                    The chart shows the progress made across the four language domains. 
+                                    The <span className="font-bold text-slate-400">dashed line </span> represents your 2025 scores, 
+                                    while the <span className="font-bold text-indigo-600">solid line </span> 
+                                    reflects your current proficiency level (2026).
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    {Object.entries(scores).map(([cat, val]) => (
+                                        <div key={cat} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{cat}</div>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-2xl font-black text-slate-900">{val['2026']}</span>
+                                                {val['2026'] > val['2025'] && (
+                                                    <span className="text-[10px] font-black text-green-600 uppercase">+{val['2026'] - val['2025']}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-12">
+                            {Object.entries(rubrics).map(([category, levels]) => {
+                                const s25 = scores[category]['2025'];
+                                const s26 = scores[category]['2026'];
+                                const hasGrown = s26 > s25;
+                                const currentLevel = levels[s26-1];
+                                const nextLevel = s26 < 5 ? levels[s26] : null;
+                                
+                                return (
+                                    <div key={category} className="group">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded bg-slate-900 text-white flex items-center justify-center font-black text-lg italic">
+                                                {category[0]}
+                                            </div>
+                                            <h3 className="text-2xl font-black uppercase italic tracking-tight">{category}</h3>
+                                            <div className="flex-1 h-px bg-slate-200"></div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Entry Lvl {s25}</span>
+                                                <i data-lucide="chevrons-right" className="text-slate-300 w-5 h-5"></i>
+                                                <div className={`px-4 py-1 rounded-full text-lg font-black ${hasGrown ? 'bg-green-600 text-white shadow-lg shadow-green-200' : 'bg-slate-200 text-slate-600'}`}>
+                                                    Lvl {s26}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                                            <div className="md:col-span-4">
+                                                {hasGrown ? (
+                                                    <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5 relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 p-2 opacity-10">
+                                                            <i data-lucide="award" className="w-16 h-16 text-green-600"></i>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-green-700 font-black text-xs uppercase mb-3 tracking-widest">
+                                                            <i data-lucide="award" className="w-4 h-4"></i> Success Milestone
+                                                        </div>
+                                                        <p className="text-sm text-green-900 leading-snug font-medium">
+                                                            Advanced from Level {s25} to <strong>Level {s26}</strong>. 
+                                                            Exhibiting increased confidence and complexity in {category.toLowerCase()} tasks.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-slate-50 border-2 border-slate-100 rounded-xl p-5">
+                                                        <div className="flex items-center gap-2 text-slate-500 font-black text-xs uppercase mb-3 tracking-widest">
+                                                            <i data-lucide="target" className="w-4 h-4"></i> Target Objective
+                                                        </div>
+                                                        <p className="text-sm text-slate-600 leading-snug">
+                                                            Focusing on <strong>Level {s26}</strong> mastery. Developing foundation skills required for advanced {category.toLowerCase()} proficiency.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="md:col-span-8 space-y-8">
+                                                {/* Current Competencies */}
+                                                <div className="relative pl-8 border-l-4 border-indigo-600">
+                                                    <div className="absolute -left-[14px] top-0 w-6 h-6 rounded-full bg-indigo-600 border-4 border-white shadow-md"></div>
+                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Verified Competencies</h4>
+                                                    <p className="text-md font-black mb-2 text-slate-800">{currentLevel.title}</p>
+                                                    <div className="text-sm text-slate-700 space-y-2 font-medium">
+                                                        {category === 'Reading' ? (
+                                                            <>
+                                                                <div className="flex gap-2"><span>•</span> <p>{currentLevel.read}</p></div>
+                                                                <div className="flex gap-2"><span>•</span> <p>{currentLevel.understanding}</p></div>
+                                                                <div className="flex gap-2"><span>•</span> <p>{currentLevel.research}</p></div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {currentLevel.text && <div className="flex gap-2"><span>•</span> <p>{currentLevel.text}</p></div>}
+                                                                {currentLevel.details?.map((d, i) => (
+                                                                    <div key={i} className="flex gap-2"><span>•</span> <p>{d}</p></div>
+                                                                ))}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Next Level Growth Target */}
+                                                {nextLevel && (
+                                                    <div className="relative pl-8 border-l-4 border-slate-200">
+                                                        <div className="absolute -left-[14px] top-0 w-6 h-6 rounded-full bg-slate-200 border-4 border-white"></div>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Next Milestone Goal (Level {s26 + 1})</h4>
+                                                        <p className="text-sm font-bold text-slate-500 uppercase mb-3 italic">{nextLevel.title}</p>
+                                                        
+                                                        <div className="text-xs text-slate-500 italic space-y-2">
+                                                            {category === 'Reading' ? (
+                                                                <>
+                                                                    <div className="flex gap-2"><span>•</span> <p><strong>Read:</strong> {nextLevel.read}</p></div>
+                                                                    <div className="flex gap-2"><span>•</span> <p><strong>Understand:</strong> {nextLevel.understanding}</p></div>
+                                                                    <div className="flex gap-2"><span>•</span> <p><strong>Research:</strong> {nextLevel.research}</p></div>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    {nextLevel.text && <div className="flex gap-2"><span>•</span> <p>{nextLevel.text}</p></div>}
+                                                                    {nextLevel.details?.map((d, i) => (
+                                                                        <div key={i} className="flex gap-2"><span>•</span> <p>{d}</p></div>
+                                                                    ))}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
